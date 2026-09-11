@@ -74,10 +74,14 @@ class TestProcessScene(unittest.TestCase):
             filename = lac2pps.process_scene(scene, out_path="/out", **kwargs)
         return filename, writer.call_args.args
 
+    def _written_scene(self, scene):
+        """Convert the scene with the writer stubbed and return the scene that reached the writer."""
+        _, (written_scene, _) = self._write(scene)
+        return written_scene
+
     def _pps_identity(self, scene, channel):
         """Return the image name and tag the channel carries when it reaches the writer."""
-        _, (written_scene, _) = self._write(scene)
-        attrs = written_scene[channel].attrs
+        attrs = self._written_scene(scene)[channel].attrs
         return attrs["name"], attrs.get("id_tag")
 
     def _pps_identity_of_added_channel(self, channel, values, wavelength):
@@ -127,14 +131,20 @@ class TestProcessScene(unittest.TestCase):
 
     def test_latitude_and_longitude_reach_the_writer_as_lat_and_lon(self):
         """PPS reads its geolocation from variables called lat and lon, and from nothing else."""
-        _, (written_scene, _) = self._write(_make_scene())
+        written_scene = self._written_scene(_make_scene())
         self.assertEqual([name in written_scene for name in ("lat", "lon", "latitude", "longitude")],
                          [True, True, False, False])
 
     def test_the_angles_reach_the_writer_under_the_names_pps_reads_them_by(self):
         """PPS knows the sun and satellite geometry only under its own five angle names."""
-        _, (written_scene, _) = self._write(_make_scene())
+        written_scene = self._written_scene(_make_scene())
         pps_names = ("sunzenith", "satzenith", "sunazimuth", "satazimuth", "azimuthdiff")
         self.assertEqual(([name in written_scene for name in pps_names],
                           [name in written_scene for name in SATPY_ANGLE_NAMES]),
                          ([True] * 5, [False] * 5))
+
+    def test_the_sun_zenith_angle_reaches_the_writer_with_its_pps_tag_and_cf_standard_name(self):
+        """PPS selects an angle by its tag; the standard name tells any other reader what it holds."""
+        written_scene = self._written_scene(_make_scene())
+        attrs = written_scene["sunzenith"].attrs
+        self.assertEqual((attrs.get("id_tag"), attrs.get("standard_name")), ("sunzenith", "solar_zenith_angle"))
