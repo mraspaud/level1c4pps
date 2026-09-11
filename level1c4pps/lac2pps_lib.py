@@ -50,5 +50,5 @@ def process_scene(scene, out_path=".", orbit_n=0):
     scene["scanline_timestamps"] = scanline_timestamps
     label_quality_flags(scene)
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
-    save_data(scene, filename, header_attrs=None, engine=None)
+    save_data(scene, filename, header_attrs={"source": "lac2pps.py"}, engine=None)
     return filename

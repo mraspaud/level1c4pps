@@ -20,6 +20,7 @@
 """Unit tests for the lac2pps_lib module."""
 
 import datetime as dt
+import inspect
 import os
 import unittest
 from unittest import mock
@@ -29,6 +30,7 @@ import xarray as xr
 from satpy import Scene
 
 import level1c4pps.lac2pps_lib as lac2pps
+from level1c4pps import save_data
 
 
 SCANLINE_TIMES = np.array(["2009-07-01T12:16", "2009-07-01T12:27"], dtype="datetime64[ms]")
@@ -70,15 +72,15 @@ class TestProcessScene(unittest.TestCase):
 
     @staticmethod
     def _write(scene, **kwargs):
-        """Convert the scene with the writer stubbed; return the file name and what reached the writer."""
+        """Convert the scene with the writer stubbed; return the file name and the writer's arguments by name."""
         with mock.patch("level1c4pps.lac2pps_lib.save_data") as writer:
             filename = lac2pps.process_scene(scene, out_path="/out", **kwargs)
-        return filename, writer.call_args.args
+        return filename, inspect.signature(save_data).bind(*writer.call_args.args, **writer.call_args.kwargs).arguments
 
     def _written_scene(self, scene):
         """Convert the scene with the writer stubbed and return the scene that reached the writer."""
-        _, (written_scene, _) = self._write(scene)
-        return written_scene
+        _, written = self._write(scene)
+        return written["scene"]
 
     def _pps_identity(self, scene, channel):
         """Return the image name and tag the channel carries when it reaches the writer."""
@@ -95,7 +97,7 @@ class TestProcessScene(unittest.TestCase):
         """The file name is what PPS uses to find a pass, so it must follow the PPS pattern."""
         expected = os.path.join("/out", "S_NWC_avhrr_noaa19_12345_20090701T1216000Z_20090701T1227000Z.nc")
         filename, written = self._write(_make_scene(), orbit_n=12345)
-        self.assertEqual((filename, written[1]), (expected, expected))
+        self.assertEqual((filename, written["filename"]), (expected, expected))
 
     def test_channel_1_reaches_the_writer_as_the_06_micron_reflectance_image(self):
         """PPS finds a channel by its image name and tag, never by the AVHRR channel name."""
@@ -159,3 +161,8 @@ class TestProcessScene(unittest.TestCase):
         """PPS reads the pygac quality flags under the same tag and name whether a pass is GAC or LAC."""
         attrs = self._written_scene(_make_scene())["qual_flags"].attrs
         self.assertEqual((attrs.get("id_tag"), attrs.get("long_name")), ("qual_flags", "pygac quality flags"))
+
+    def test_the_header_names_lac2pps_as_its_source(self):
+        """The source attribute is how a PPS user tells which converter made the file."""
+        _, written = self._write(_make_scene())
+        self.assertEqual((written["header_attrs"] or {}).get("source"), "lac2pps.py")
