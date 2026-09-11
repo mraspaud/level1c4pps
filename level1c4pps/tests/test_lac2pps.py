@@ -22,6 +22,8 @@
 import datetime as dt
 import inspect
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -35,6 +37,9 @@ import level1c4pps.lac2pps_lib as lac2pps
 from level1c4pps import save_data
 
 
+TEST_DIR = os.path.dirname(__file__)
+TIROSN_LEVEL1B_FILE = os.path.join(TEST_DIR, "NSS.GHRR.TN.D80003.S1147.E1332.B0630506.GC")
+METOPB_LEVEL1B_FILE = os.path.join(TEST_DIR, "ESR.LHRR.M1.D16087.S2023.E2037.B01828628.BN")
 SCANLINE_TIMES = np.array(["2009-07-01T12:16", "2009-07-01T12:27"], dtype="datetime64[ms]")
 SATPY_ANGLE_NAMES = ("solar_zenith_angle", "sensor_zenith_angle", "solar_azimuth_angle",
                      "sensor_azimuth_angle", "sun_sensor_azimuth_difference_angle")
@@ -180,22 +185,31 @@ class TestProcessOneFile(unittest.TestCase):
 
     def test_a_four_channel_level1b_file_becomes_a_pps_file_with_its_four_images(self):
         """The whole chain, from the reader to a file on disk, on the oldest AVHRR there is: TIROS-N."""
-        test_dir = os.path.dirname(__file__)
         with tempfile.TemporaryDirectory() as out_dir:
-            filename = lac2pps.process_one_file(
-                os.path.join(test_dir, "NSS.GHRR.TN.D80003.S1147.E1332.B0630506.GC"), out_path=out_dir,
-                reader_kwargs={"tle_dir": test_dir, "tle_name": "TLE_tirosn.txt"})
+            filename = lac2pps.process_one_file(TIROSN_LEVEL1B_FILE, out_path=out_dir,
+                                                reader_kwargs={"tle_dir": TEST_DIR, "tle_name": "TLE_tirosn.txt"})
             with netCDF4.Dataset(filename) as pps_file:
                 images = sorted(name for name in pps_file.variables if name.startswith("image"))
         self.assertEqual(images, ["image1", "image2", "image3", "image5"])
 
     def test_an_avhrr_3_lac_file_becomes_a_pps_file_with_its_six_images(self):
         """AVHRR/3 splits channel 3 into 3a and 3b and adds channel 5; PPS needs all six images from a LAC pass."""
-        test_dir = os.path.dirname(__file__)
         with tempfile.TemporaryDirectory() as out_dir:
-            filename = lac2pps.process_one_file(
-                os.path.join(test_dir, "ESR.LHRR.M1.D16087.S2023.E2037.B01828628.BN"), out_path=out_dir,
-                reader_kwargs={"tle_dir": test_dir, "tle_name": "TLE_metopb.txt"})
+            filename = lac2pps.process_one_file(METOPB_LEVEL1B_FILE, out_path=out_dir,
+                                                reader_kwargs={"tle_dir": TEST_DIR, "tle_name": "TLE_metopb.txt"})
             with netCDF4.Dataset(filename) as pps_file:
                 images = sorted(name for name in pps_file.variables if name.startswith("image"))
         self.assertEqual(images, ["image1", "image2", "image3", "image4", "image5", "image6"])
+
+
+class TestLac2ppsScript(unittest.TestCase):
+    """Test the lac2pps command-line script."""
+
+    def test_the_script_writes_one_pps_file_for_a_level1b_file(self):
+        """Operators run the converters from the command line, so the conversion must be reachable from there."""
+        script = os.path.join(TEST_DIR, os.pardir, os.pardir, "bin", "lac2pps.py")
+        with tempfile.TemporaryDirectory() as out_dir:
+            run = subprocess.run([sys.executable, script, TIROSN_LEVEL1B_FILE, "-o", out_dir, "-td", TEST_DIR,
+                                  "-tn", "TLE_tirosn.txt"], capture_output=True)
+            written = [name for name in os.listdir(out_dir) if name.startswith("S_NWC_avhrr_")]
+        self.assertEqual((run.returncode, len(written)), (0, 1))
