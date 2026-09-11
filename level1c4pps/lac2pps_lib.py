@@ -50,6 +50,7 @@ def process_scene(scene, out_path=".", orbit_n=0, engine=None):
     update_angle_attributes(scene, ir_channel)
     scene["scanline_timestamps"] = scanline_timestamps
     label_quality_flags(scene)
+    del scene["qual_flags"].coords["acq_time"]
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
     header_attrs = get_header_attrs(scene, band=ir_channel, sensor="avhrr")
     header_attrs["source"] = "lac2pps.py"

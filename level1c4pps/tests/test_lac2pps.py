@@ -164,6 +164,17 @@ class TestProcessScene(unittest.TestCase):
         written_scene = self._written_scene(_make_scene())
         np.testing.assert_array_equal(written_scene["scanline_timestamps"].values, SCANLINE_TIMES)
 
+    def test_the_scanline_times_reach_the_writer_only_as_scanline_timestamps(self):
+        """PPS reads the time of each scanline from scanline_timestamps, as in GAC files.
+
+        The reader also hangs that time on every dataset as an acq_time coordinate.
+        Written as it is, the file carries the scanline times twice: once more as an
+        acq_time variable that every image names among its coordinates.
+        """
+        written_scene = self._written_scene(_make_scene())
+        carrying_acq_time = sorted(data.attrs["name"] for data in written_scene.values() if "acq_time" in data.coords)
+        self.assertEqual(carrying_acq_time, [])
+
     def test_the_quality_flags_reach_the_writer_with_the_pps_tag_and_name_of_the_gac_flags(self):
         """PPS reads the pygac quality flags under the same tag and name whether a pass is GAC or LAC."""
         attrs = self._written_scene(_make_scene())["qual_flags"].attrs
