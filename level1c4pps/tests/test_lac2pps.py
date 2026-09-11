@@ -179,6 +179,11 @@ class TestProcessScene(unittest.TestCase):
         _, written = self._write(_make_scene(), engine="netcdf4")
         self.assertEqual(written["engine"], "netcdf4")
 
+    def test_the_header_carries_the_orbit_number(self):
+        """PPS keeps the orbit number in the file header as well as in the file name."""
+        _, written = self._write(_make_scene(), orbit_n=12345)
+        self.assertEqual((written["header_attrs"] or {}).get("orbit_number"), 12345)
+
 
 class TestProcessOneFile(unittest.TestCase):
     """Test converting a level 1b file to a PPS level1c file on disk."""
