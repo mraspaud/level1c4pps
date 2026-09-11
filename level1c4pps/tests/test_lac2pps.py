@@ -66,6 +66,12 @@ class TestProcessScene(unittest.TestCase):
             filename = lac2pps.process_scene(scene, out_path="/out", **kwargs)
         return filename, writer.call_args.args
 
+    def _pps_identity(self, scene, channel):
+        """Return the image name and tag the channel carries when it reaches the writer."""
+        _, (written_scene, _) = self._write(scene)
+        attrs = written_scene[channel].attrs
+        return attrs["name"], attrs.get("id_tag")
+
     def test_the_scene_is_written_under_the_pps_file_name(self):
         """The file name is what PPS uses to find a pass, so it must follow the PPS pattern."""
         expected = os.path.join("/out", "S_NWC_avhrr_noaa19_12345_20090701T1216000Z_20090701T1227000Z.nc")
@@ -74,6 +80,10 @@ class TestProcessScene(unittest.TestCase):
 
     def test_channel_1_reaches_the_writer_as_the_06_micron_reflectance_image(self):
         """PPS finds a channel by its image name and tag, never by the AVHRR channel name."""
-        _, (written_scene, _) = self._write(_make_scene())
-        channel_1 = written_scene["1"].attrs
-        self.assertEqual((channel_1["name"], channel_1.get("id_tag")), ("image1", "ch_r06"))
+        self.assertEqual(self._pps_identity(_make_scene(), "1"), ("image1", "ch_r06"))
+
+    def test_channel_3_of_older_platforms_reaches_the_writer_as_the_37_micron_image(self):
+        """AVHRR/1 and AVHRR/2 call their 3.7 micron channel 3; PPS must still find it as image5."""
+        scene = _make_scene()
+        scene["3"] = _make_channel("3", [[290.0, 291.0], [292.0, 293.0]], [3.55, 3.74, 3.93, "um"])
+        self.assertEqual(self._pps_identity(scene, "3"), ("image5", "ch_tb37"))
