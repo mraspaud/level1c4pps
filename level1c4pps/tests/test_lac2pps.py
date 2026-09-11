@@ -148,3 +148,8 @@ class TestProcessScene(unittest.TestCase):
         written_scene = self._written_scene(_make_scene())
         attrs = written_scene["sunzenith"].attrs
         self.assertEqual((attrs.get("id_tag"), attrs.get("standard_name")), ("sunzenith", "solar_zenith_angle"))
+
+    def test_every_scanline_reaches_the_writer_with_its_acquisition_time(self):
+        """PPS times each line separately; without the timestamps a pass has only a start and an end."""
+        written_scene = self._written_scene(_make_scene())
+        np.testing.assert_array_equal(written_scene["scanline_timestamps"].values, SCANLINE_TIMES)
