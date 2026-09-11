@@ -23,9 +23,10 @@ from level1c4pps import compose_filename, save_data, set_header_and_band_attrs_d
 
 PPS_TAGS = {"1": "ch_r06",
             "2": "ch_r09",
-            "3": "ch_tb37",
             "3a": "ch_r16",
+            "3": "ch_tb37",
             "3b": "ch_tb37",
+            "4": "ch_tb11",
             "5": "ch_tb12"}
 ONE_IR_CHANNEL = "4"
 

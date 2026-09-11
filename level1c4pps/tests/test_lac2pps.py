@@ -112,3 +112,7 @@ class TestProcessScene(unittest.TestCase):
         """Channel 5 is the 12 micron split-window channel; PPS knows it as image4."""
         identity = self._pps_identity_of_added_channel("5", [[270.0, 271.0], [272.0, 273.0]], [11.5, 12.0, 12.5, "um"])
         self.assertEqual(identity, ("image4", "ch_tb12"))
+
+    def test_channel_4_reaches_the_writer_as_the_11_micron_image(self):
+        """Channel 4 is the 11 micron window channel every AVHRR carries; PPS knows it as image3."""
+        self.assertEqual(self._pps_identity(_make_scene(), "4"), ("image3", "ch_tb11"))
