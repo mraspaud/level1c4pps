@@ -34,6 +34,11 @@ PPS_TAGS = {"1": "ch_r06",
 ONE_IR_CHANNEL = "4"
 
 
+def label_quality_flags(scene):
+    """Give the pygac quality flags the tag and name PPS reads them by."""
+    scene["qual_flags"].attrs.update(id_tag="qual_flags", long_name="pygac quality flags")
+
+
 def process_scene(scene, out_path=".", orbit_n=0):
     """Convert an already loaded AVHRR scene in place and write it as PPS level1c."""
     ir_channel = scene[ONE_IR_CHANNEL]
@@ -43,6 +48,7 @@ def process_scene(scene, out_path=".", orbit_n=0):
     convert_angles(scene)
     update_angle_attributes(scene, ir_channel)
     scene["scanline_timestamps"] = scanline_timestamps
+    label_quality_flags(scene)
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
     save_data(scene, filename, header_attrs=None, engine=None)
     return filename

@@ -33,7 +33,7 @@ from level1c4pps import (check_file_exists, compose_filename, convert_angles,
                          rename_latitude_longitude, save_data,
                          set_header_and_band_attrs_defaults,
                          update_angle_attributes)
-from level1c4pps.lac2pps_lib import PPS_TAGS
+from level1c4pps.lac2pps_lib import PPS_TAGS, label_quality_flags
 
 logger = logging.getLogger('gac2pps')
 GEOLOCATION_NAMES = [  # additional variables to load
@@ -70,9 +70,7 @@ def update_ancilliary_datasets(scene):
     scene['scanline_timestamps'] = xr.DataArray(da.from_array(scene['qual_flags'].coords['acq_time']),
                                                 dims=['y'], coords={'y': scene['qual_flags']['y']})
     scene['scanline_timestamps'].attrs['name'] = 'scanline_timestamps'
-    # Update qual_flags attrs
-    scene['qual_flags'].attrs['id_tag'] = 'qual_flags'
-    scene['qual_flags'].attrs['long_name'] = 'pygac quality flags'
+    label_quality_flags(scene)
     scene['qual_flags'].coords['time'] = ir_channel_obj.attrs['start_time']
     del scene['qual_flags'].coords['acq_time']
 

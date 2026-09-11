@@ -36,10 +36,9 @@ SATPY_ANGLE_NAMES = ("solar_zenith_angle", "sensor_zenith_angle", "solar_azimuth
                      "sensor_azimuth_angle", "sun_sensor_azimuth_difference_angle")
 
 
-def _make_swath_array(name, values, **attrs):
-    """Make a two-dimensional array shaped like the ones the avhrr_l1b_gaclac reader loads."""
-    return xr.DataArray(values, dims=("y", "x"), coords={"acq_time": ("y", SCANLINE_TIMES)},
-                        attrs={"name": name, **attrs})
+def _make_swath_array(name, values, dims=("y", "x"), **attrs):
+    """Make an array along the scanlines, shaped like the ones the avhrr_l1b_gaclac reader loads."""
+    return xr.DataArray(values, dims=dims, coords={"acq_time": ("y", SCANLINE_TIMES)}, attrs={"name": name, **attrs})
 
 
 def _make_channel(name, values, wavelength):
@@ -61,6 +60,8 @@ def _make_scene():
     scene["longitude"] = _make_swath_array("longitude", [[15.0, 16.0], [17.0, 18.0]])
     for name in SATPY_ANGLE_NAMES:
         scene[name] = _make_swath_array(name, [[10.0, 20.0], [30.0, 40.0]])
+    scene["qual_flags"] = _make_swath_array("qual_flags", [[1, 0, 0, 0, 0, 0, 0], [2, 0, 0, 0, 0, 0, 0]],
+                                            dims=("y", "num_flags"))
     return scene
 
 
@@ -153,3 +154,8 @@ class TestProcessScene(unittest.TestCase):
         """PPS times each line separately; without the timestamps a pass has only a start and an end."""
         written_scene = self._written_scene(_make_scene())
         np.testing.assert_array_equal(written_scene["scanline_timestamps"].values, SCANLINE_TIMES)
+
+    def test_the_quality_flags_reach_the_writer_with_the_pps_tag_and_name_of_the_gac_flags(self):
+        """PPS reads the pygac quality flags under the same tag and name whether a pass is GAC or LAC."""
+        attrs = self._written_scene(_make_scene())["qual_flags"].attrs
+        self.assertEqual((attrs.get("id_tag"), attrs.get("long_name")), ("qual_flags", "pygac quality flags"))
