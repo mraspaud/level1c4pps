@@ -183,3 +183,14 @@ class TestProcessOneFile(unittest.TestCase):
             with netCDF4.Dataset(filename) as pps_file:
                 images = sorted(name for name in pps_file.variables if name.startswith("image"))
         self.assertEqual(images, ["image1", "image2", "image3", "image5"])
+
+    def test_an_avhrr_3_lac_file_becomes_a_pps_file_with_its_six_images(self):
+        """AVHRR/3 splits channel 3 into 3a and 3b and adds channel 5; PPS needs all six images from a LAC pass."""
+        test_dir = os.path.dirname(__file__)
+        with tempfile.TemporaryDirectory() as out_dir:
+            filename = lac2pps.process_one_file(
+                os.path.join(test_dir, "ESR.LHRR.M1.D16087.S2023.E2037.B01828628.BN"), out_path=out_dir,
+                reader_kwargs={"tle_dir": test_dir, "tle_name": "TLE_metopb.txt"})
+            with netCDF4.Dataset(filename) as pps_file:
+                images = sorted(name for name in pps_file.variables if name.startswith("image"))
+        self.assertEqual(images, ["image1", "image2", "image3", "image4", "image5", "image6"])

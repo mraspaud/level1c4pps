@@ -58,6 +58,6 @@ def process_scene(scene, out_path=".", orbit_n=0):
 def process_one_file(level1b_file, out_path=".", reader_kwargs=None):
     """Read an AVHRR level 1b file and write it as PPS level1c."""
     scene = Scene(reader="avhrr_l1b_gaclac", filenames=[level1b_file], reader_kwargs=reader_kwargs)
-    scene.load(["1", "2", "3", "4", "latitude", "longitude", "qual_flags", "solar_zenith_angle",
-                "sensor_zenith_angle", "sun_sensor_azimuth_difference_angle"])
+    scene.load(list(PPS_TAGS) + ["latitude", "longitude", "qual_flags", "solar_zenith_angle",
+                                 "sensor_zenith_angle", "sun_sensor_azimuth_difference_angle"])
     return process_scene(scene, out_path=out_path)
