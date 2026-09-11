@@ -169,6 +169,11 @@ class TestProcessScene(unittest.TestCase):
         _, written = self._write(_make_scene())
         self.assertEqual((written["header_attrs"] or {}).get("source"), "lac2pps.py")
 
+    def test_the_writer_uses_the_netcdf_engine_it_is_asked_for(self):
+        """pygac-fdr writes with the engine its configuration names, so that choice must reach the writer."""
+        _, written = self._write(_make_scene(), engine="netcdf4")
+        self.assertEqual(written["engine"], "netcdf4")
+
 
 class TestProcessOneFile(unittest.TestCase):
     """Test converting a level 1b file to a PPS level1c file on disk."""

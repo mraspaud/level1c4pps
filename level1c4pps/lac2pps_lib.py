@@ -40,7 +40,7 @@ def label_quality_flags(scene):
     scene["qual_flags"].attrs.update(id_tag="qual_flags", long_name="pygac quality flags")
 
 
-def process_scene(scene, out_path=".", orbit_n=0):
+def process_scene(scene, out_path=".", orbit_n=0, engine=None):
     """Convert an already loaded AVHRR scene in place and write it as PPS level1c."""
     ir_channel = scene[ONE_IR_CHANNEL]
     scanline_timestamps = xr.DataArray(ir_channel.coords["acq_time"].values, dims=["y"])
@@ -51,7 +51,7 @@ def process_scene(scene, out_path=".", orbit_n=0):
     scene["scanline_timestamps"] = scanline_timestamps
     label_quality_flags(scene)
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
-    save_data(scene, filename, header_attrs={"source": "lac2pps.py"}, engine=None)
+    save_data(scene, filename, header_attrs={"source": "lac2pps.py"}, engine=engine)
     return filename
 
 
