@@ -72,6 +72,12 @@ class TestProcessScene(unittest.TestCase):
         attrs = written_scene[channel].attrs
         return attrs["name"], attrs.get("id_tag")
 
+    def _pps_identity_of_added_channel(self, channel, values, wavelength):
+        """Add the channel to the shared scene and return the PPS identity it reaches the writer with."""
+        scene = _make_scene()
+        scene[channel] = _make_channel(channel, values, wavelength)
+        return self._pps_identity(scene, channel)
+
     def test_the_scene_is_written_under_the_pps_file_name(self):
         """The file name is what PPS uses to find a pass, so it must follow the PPS pattern."""
         expected = os.path.join("/out", "S_NWC_avhrr_noaa19_12345_20090701T1216000Z_20090701T1227000Z.nc")
@@ -84,6 +90,10 @@ class TestProcessScene(unittest.TestCase):
 
     def test_channel_3_of_older_platforms_reaches_the_writer_as_the_37_micron_image(self):
         """AVHRR/1 and AVHRR/2 call their 3.7 micron channel 3; PPS must still find it as image5."""
-        scene = _make_scene()
-        scene["3"] = _make_channel("3", [[290.0, 291.0], [292.0, 293.0]], [3.55, 3.74, 3.93, "um"])
-        self.assertEqual(self._pps_identity(scene, "3"), ("image5", "ch_tb37"))
+        identity = self._pps_identity_of_added_channel("3", [[290.0, 291.0], [292.0, 293.0]], [3.55, 3.74, 3.93, "um"])
+        self.assertEqual(identity, ("image5", "ch_tb37"))
+
+    def test_channel_2_reaches_the_writer_as_the_09_micron_reflectance_image(self):
+        """A LAC or FRAC file must look to PPS exactly like a GAC one from the same instrument."""
+        identity = self._pps_identity_of_added_channel("2", [[20.0, 21.0], [22.0, 23.0]], [0.725, 0.8625, 1.0, "um"])
+        self.assertEqual(identity, ("image2", "ch_r09"))
