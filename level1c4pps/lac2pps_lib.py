@@ -19,7 +19,7 @@
 
 """Convert AVHRR LAC and FRAC data to PPS level-1c format."""
 
-from level1c4pps import (compose_filename, rename_latitude_longitude, save_data,
+from level1c4pps import (compose_filename, convert_angles, rename_latitude_longitude, save_data,
                          set_header_and_band_attrs_defaults)
 
 PPS_TAGS = {"1": "ch_r06",
@@ -37,6 +37,7 @@ def process_scene(scene, out_path=".", orbit_n=0):
     ir_channel = scene[ONE_IR_CHANNEL]
     set_header_and_band_attrs_defaults(scene, PPS_TAGS, ir_channel, orbit_n=orbit_n)
     rename_latitude_longitude(scene)
+    convert_angles(scene)
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
     save_data(scene, filename, header_attrs=None, engine=None)
     return filename

@@ -32,6 +32,8 @@ import level1c4pps.lac2pps_lib as lac2pps
 
 
 SCANLINE_TIMES = np.array(["2009-07-01T12:16", "2009-07-01T12:27"], dtype="datetime64[ms]")
+SATPY_ANGLE_NAMES = ("solar_zenith_angle", "sensor_zenith_angle", "solar_azimuth_angle",
+                     "sensor_azimuth_angle", "sun_sensor_azimuth_difference_angle")
 
 
 def _make_swath_array(name, values, **attrs):
@@ -57,6 +59,8 @@ def _make_scene():
     scene["1"] = _make_channel("1", [[10.0, 11.0], [12.0, 13.0]], [0.58, 0.63, 0.68, "um"])
     scene["latitude"] = _make_swath_array("latitude", [[60.0, 61.0], [62.0, 63.0]])
     scene["longitude"] = _make_swath_array("longitude", [[15.0, 16.0], [17.0, 18.0]])
+    for name in SATPY_ANGLE_NAMES:
+        scene[name] = _make_swath_array(name, [[10.0, 20.0], [30.0, 40.0]])
     return scene
 
 
@@ -126,3 +130,11 @@ class TestProcessScene(unittest.TestCase):
         _, (written_scene, _) = self._write(_make_scene())
         self.assertEqual([name in written_scene for name in ("lat", "lon", "latitude", "longitude")],
                          [True, True, False, False])
+
+    def test_the_angles_reach_the_writer_under_the_names_pps_reads_them_by(self):
+        """PPS knows the sun and satellite geometry only under its own five angle names."""
+        _, (written_scene, _) = self._write(_make_scene())
+        pps_names = ("sunzenith", "satzenith", "sunazimuth", "satazimuth", "azimuthdiff")
+        self.assertEqual(([name in written_scene for name in pps_names],
+                          [name in written_scene for name in SATPY_ANGLE_NAMES]),
+                         ([True] * 5, [False] * 5))
