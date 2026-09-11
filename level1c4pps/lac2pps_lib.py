@@ -22,7 +22,7 @@
 import xarray as xr
 from satpy import Scene
 
-from level1c4pps import (compose_filename, convert_angles, rename_latitude_longitude, save_data,
+from level1c4pps import (compose_filename, convert_angles, get_header_attrs, rename_latitude_longitude, save_data,
                          set_header_and_band_attrs_defaults, update_angle_attributes)
 
 PPS_TAGS = {"1": "ch_r06",
@@ -51,7 +51,9 @@ def process_scene(scene, out_path=".", orbit_n=0, engine=None):
     scene["scanline_timestamps"] = scanline_timestamps
     label_quality_flags(scene)
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
-    save_data(scene, filename, header_attrs={"source": "lac2pps.py", "orbit_number": orbit_n}, engine=engine)
+    header_attrs = get_header_attrs(scene, band=ir_channel, sensor="avhrr")
+    header_attrs["source"] = "lac2pps.py"
+    save_data(scene, filename, header_attrs=header_attrs, engine=engine)
     return filename
 
 

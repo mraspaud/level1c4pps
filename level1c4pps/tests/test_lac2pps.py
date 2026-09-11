@@ -184,6 +184,17 @@ class TestProcessScene(unittest.TestCase):
         _, written = self._write(_make_scene(), orbit_n=12345)
         self.assertEqual((written["header_attrs"] or {}).get("orbit_number"), 12345)
 
+    def test_the_header_carries_what_every_level1c4pps_avhrr_header_carries(self):
+        """PPS reads platform, sensor, times and provenance from a GAC file's header; a LAC file must offer the same.
+
+        Conventions is not listed: the CF writer adds it to the file itself.
+        """
+        _, written = self._write(_make_scene(), orbit_n=12345)
+        gac_header_keys = {"date_created", "end_time", "history", "instrument", "orbit_number", "platform",
+                           "platform_name", "sensor", "source", "start_time", "version_level1c4pps",
+                           "version_level1c4pps_satpy"}
+        self.assertEqual(gac_header_keys - set(written["header_attrs"] or {}), set())
+
 
 class TestProcessOneFile(unittest.TestCase):
     """Test converting a level 1b file to a PPS level1c file on disk."""
