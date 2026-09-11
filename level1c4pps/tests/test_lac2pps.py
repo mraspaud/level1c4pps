@@ -97,3 +97,8 @@ class TestProcessScene(unittest.TestCase):
         """A LAC or FRAC file must look to PPS exactly like a GAC one from the same instrument."""
         identity = self._pps_identity_of_added_channel("2", [[20.0, 21.0], [22.0, 23.0]], [0.725, 0.8625, 1.0, "um"])
         self.assertEqual(identity, ("image2", "ch_r09"))
+
+    def test_channel_3a_reaches_the_writer_as_the_16_micron_reflectance_image(self):
+        """AVHRR/3 measures 1.6 micron in channel 3a by day; PPS knows that channel as image6."""
+        identity = self._pps_identity_of_added_channel("3a", [[5.0, 6.0], [7.0, 8.0]], [1.58, 1.61, 1.64, "um"])
+        self.assertEqual(identity, ("image6", "ch_r16"))
