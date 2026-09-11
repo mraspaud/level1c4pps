@@ -34,18 +34,20 @@ import level1c4pps.lac2pps_lib as lac2pps
 SCANLINE_TIMES = np.array(["2009-07-01T12:16", "2009-07-01T12:27"], dtype="datetime64[ms]")
 
 
+def _make_swath_array(name, values, **attrs):
+    """Make a two-dimensional array shaped like the ones the avhrr_l1b_gaclac reader loads."""
+    return xr.DataArray(values, dims=("y", "x"), coords={"acq_time": ("y", SCANLINE_TIMES)},
+                        attrs={"name": name, **attrs})
+
+
 def _make_channel(name, values, wavelength):
     """Make a channel carrying what the avhrr_l1b_gaclac reader gives every channel."""
-    return xr.DataArray(
-        values,
-        dims=("y", "x"),
-        coords={"acq_time": ("y", SCANLINE_TIMES)},
-        attrs={"name": name,
-               "wavelength": wavelength,
-               "start_time": dt.datetime(2009, 7, 1, 12, 16),
-               "end_time": dt.datetime(2009, 7, 1, 12, 27),
-               "platform_name": "noaa19",
-               "sensor": "avhrr-3"})
+    return _make_swath_array(name, values,
+                             wavelength=wavelength,
+                             start_time=dt.datetime(2009, 7, 1, 12, 16),
+                             end_time=dt.datetime(2009, 7, 1, 12, 27),
+                             platform_name="noaa19",
+                             sensor="avhrr-3")
 
 
 def _make_scene():
@@ -53,6 +55,8 @@ def _make_scene():
     scene = Scene()
     scene["4"] = _make_channel("4", [[280.0, 281.0], [282.0, 283.0]], [10.3, 10.8, 11.3, "um"])
     scene["1"] = _make_channel("1", [[10.0, 11.0], [12.0, 13.0]], [0.58, 0.63, 0.68, "um"])
+    scene["latitude"] = _make_swath_array("latitude", [[60.0, 61.0], [62.0, 63.0]])
+    scene["longitude"] = _make_swath_array("longitude", [[15.0, 16.0], [17.0, 18.0]])
     return scene
 
 
@@ -116,3 +120,9 @@ class TestProcessScene(unittest.TestCase):
     def test_channel_4_reaches_the_writer_as_the_11_micron_image(self):
         """Channel 4 is the 11 micron window channel every AVHRR carries; PPS knows it as image3."""
         self.assertEqual(self._pps_identity(_make_scene(), "4"), ("image3", "ch_tb11"))
+
+    def test_latitude_and_longitude_reach_the_writer_as_lat_and_lon(self):
+        """PPS reads its geolocation from variables called lat and lon, and from nothing else."""
+        _, (written_scene, _) = self._write(_make_scene())
+        self.assertEqual([name in written_scene for name in ("lat", "lon", "latitude", "longitude")],
+                         [True, True, False, False])
