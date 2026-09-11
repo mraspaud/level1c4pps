@@ -22,9 +22,11 @@
 import datetime as dt
 import inspect
 import os
+import tempfile
 import unittest
 from unittest import mock
 
+import netCDF4
 import numpy as np
 import xarray as xr
 from satpy import Scene
@@ -166,3 +168,18 @@ class TestProcessScene(unittest.TestCase):
         """The source attribute is how a PPS user tells which converter made the file."""
         _, written = self._write(_make_scene())
         self.assertEqual((written["header_attrs"] or {}).get("source"), "lac2pps.py")
+
+
+class TestProcessOneFile(unittest.TestCase):
+    """Test converting a level 1b file to a PPS level1c file on disk."""
+
+    def test_a_four_channel_level1b_file_becomes_a_pps_file_with_its_four_images(self):
+        """The whole chain, from the reader to a file on disk, on the oldest AVHRR there is: TIROS-N."""
+        test_dir = os.path.dirname(__file__)
+        with tempfile.TemporaryDirectory() as out_dir:
+            filename = lac2pps.process_one_file(
+                os.path.join(test_dir, "NSS.GHRR.TN.D80003.S1147.E1332.B0630506.GC"), out_path=out_dir,
+                reader_kwargs={"tle_dir": test_dir, "tle_name": "TLE_tirosn.txt"})
+            with netCDF4.Dataset(filename) as pps_file:
+                images = sorted(name for name in pps_file.variables if name.startswith("image"))
+        self.assertEqual(images, ["image1", "image2", "image3", "image5"])

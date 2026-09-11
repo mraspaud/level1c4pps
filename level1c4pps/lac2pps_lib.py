@@ -20,6 +20,7 @@
 """Convert AVHRR LAC and FRAC data to PPS level-1c format."""
 
 import xarray as xr
+from satpy import Scene
 
 from level1c4pps import (compose_filename, convert_angles, rename_latitude_longitude, save_data,
                          set_header_and_band_attrs_defaults, update_angle_attributes)
@@ -52,3 +53,11 @@ def process_scene(scene, out_path=".", orbit_n=0):
     filename = compose_filename(scene, out_path, instrument="avhrr", band=ir_channel)
     save_data(scene, filename, header_attrs={"source": "lac2pps.py"}, engine=None)
     return filename
+
+
+def process_one_file(level1b_file, out_path=".", reader_kwargs=None):
+    """Read an AVHRR level 1b file and write it as PPS level1c."""
+    scene = Scene(reader="avhrr_l1b_gaclac", filenames=[level1b_file], reader_kwargs=reader_kwargs)
+    scene.load(["1", "2", "3", "4", "latitude", "longitude", "qual_flags", "solar_zenith_angle",
+                "sensor_zenith_angle", "sun_sensor_azimuth_difference_angle"])
+    return process_scene(scene, out_path=out_path)
