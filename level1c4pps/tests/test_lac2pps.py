@@ -124,7 +124,7 @@ class TestProcessScene(unittest.TestCase):
 
         PPS would take that channel for a real 12 micron channel.
         """
-        for platform_name in ("noaa6", "noaa8", "noaa10"):
+        for platform_name in ("tirosn", "noaa6", "noaa8", "noaa10"):
             with self.subTest(platform_name=platform_name):
                 scene = _make_scene(platform_name)
                 scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"],
