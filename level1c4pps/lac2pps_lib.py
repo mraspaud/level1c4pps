@@ -17,8 +17,9 @@ PPS_TAGS = {"1": "ch_r06",
             "4": "ch_tb11",
             "5": "ch_tb12"}
 ONE_IR_CHANNEL = "4"
-# satpy's reader takes these AVHRR/1 platforms for AVHRR/2 and offers them a channel 5 that is a copy of channel 4.
-PLATFORMS_WITH_A_FALSE_CHANNEL_5 = ("noaa10",)
+# These AVHRR/1 platforms have no channel 5; pygac fills one with a copy of channel 4, and satpy's reader,
+# taking NOAA-8 and NOAA-10 for AVHRR/2, offers it for them.
+PLATFORMS_WITH_A_FALSE_CHANNEL_5 = ("noaa8", "noaa10")
 
 
 def label_quality_flags(scene):

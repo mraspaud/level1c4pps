@@ -120,13 +120,16 @@ class TestProcessScene(unittest.TestCase):
         self.assertEqual(identity, ("image4", "ch_tb12"))
 
     def test_channel_5_of_an_avhrr_1_platform_does_not_reach_the_writer(self):
-        """NOAA-8 and NOAA-10 carry the four-channel AVHRR/1, yet the reader offers them a channel 5.
+        """AVHRR/1 has four channels, yet pygac gives it a channel 5 that is a copy of channel 4.
 
-        pygac fills that channel with a copy of channel 4, and PPS would take it for a real 12 micron channel.
+        PPS would take that channel for a real 12 micron channel.
         """
-        scene = _make_scene("noaa10")
-        scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"], "noaa10")
-        self.assertNotIn("5", self._written_scene(scene))
+        for platform_name in ("noaa8", "noaa10"):
+            with self.subTest(platform_name=platform_name):
+                scene = _make_scene(platform_name)
+                scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"],
+                                           platform_name)
+                self.assertNotIn("5", self._written_scene(scene))
 
     def test_a_noaa_10_pass_without_channel_5_still_reaches_the_writer(self):
         """Once the reader stops offering NOAA-10 a channel 5, its passes must still convert instead of crashing."""
