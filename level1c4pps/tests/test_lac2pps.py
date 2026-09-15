@@ -34,21 +34,21 @@ def _make_swath_array(name, values, dims=("y", "x"), **attrs):
     return xr.DataArray(values, dims=dims, coords={"acq_time": ("y", SCANLINE_TIMES)}, attrs={"name": name, **attrs})
 
 
-def _make_channel(name, values, wavelength):
+def _make_channel(name, values, wavelength, platform_name="noaa19"):
     """Make a channel carrying what the avhrr_l1b_gaclac reader gives every channel."""
     return _make_swath_array(name, values,
                              wavelength=wavelength,
                              start_time=dt.datetime(2009, 7, 1, 12, 16),
                              end_time=dt.datetime(2009, 7, 1, 12, 27),
-                             platform_name="noaa19",
+                             platform_name=platform_name,
                              sensor="avhrr-3")
 
 
-def _make_scene():
+def _make_scene(platform_name="noaa19"):
     """Make a scene shaped like one the avhrr_l1b_gaclac reader loads."""
     scene = Scene()
-    scene["4"] = _make_channel("4", [[280.0, 281.0], [282.0, 283.0]], [10.3, 10.8, 11.3, "um"])
-    scene["1"] = _make_channel("1", [[10.0, 11.0], [12.0, 13.0]], [0.58, 0.63, 0.68, "um"])
+    scene["4"] = _make_channel("4", [[280.0, 281.0], [282.0, 283.0]], [10.3, 10.8, 11.3, "um"], platform_name)
+    scene["1"] = _make_channel("1", [[10.0, 11.0], [12.0, 13.0]], [0.58, 0.63, 0.68, "um"], platform_name)
     scene["latitude"] = _make_swath_array("latitude", [[60.0, 61.0], [62.0, 63.0]])
     scene["longitude"] = _make_swath_array("longitude", [[15.0, 16.0], [17.0, 18.0]])
     for name in SATPY_ANGLE_NAMES:
@@ -124,11 +124,13 @@ class TestProcessScene(unittest.TestCase):
 
         pygac fills that channel with a copy of channel 4, and PPS would take it for a real 12 micron channel.
         """
-        scene = _make_scene()
-        scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"])
-        for name in ("1", "4", "5"):
-            scene[name].attrs["platform_name"] = "noaa10"
+        scene = _make_scene("noaa10")
+        scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"], "noaa10")
         self.assertNotIn("5", self._written_scene(scene))
+
+    def test_a_noaa_10_pass_without_channel_5_still_reaches_the_writer(self):
+        """Once the reader stops offering NOAA-10 a channel 5, its passes must still convert instead of crashing."""
+        self.assertIn("4", self._written_scene(_make_scene("noaa10")))
 
     def test_channel_4_reaches_the_writer_as_the_11_micron_image(self):
         """Channel 4 is the 11 micron window channel every AVHRR carries; PPS knows it as image3."""
