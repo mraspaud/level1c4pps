@@ -119,6 +119,17 @@ class TestProcessScene(unittest.TestCase):
         identity = self._pps_identity_of_added_channel("5", [[270.0, 271.0], [272.0, 273.0]], [11.5, 12.0, 12.5, "um"])
         self.assertEqual(identity, ("image4", "ch_tb12"))
 
+    def test_channel_5_of_an_avhrr_1_platform_does_not_reach_the_writer(self):
+        """NOAA-8 and NOAA-10 carry the four-channel AVHRR/1, yet the reader offers them a channel 5.
+
+        pygac fills that channel with a copy of channel 4, and PPS would take it for a real 12 micron channel.
+        """
+        scene = _make_scene()
+        scene["5"] = _make_channel("5", [[280.0, 281.0], [282.0, 283.0]], [11.5, 12.0, 12.5, "um"])
+        for name in ("1", "4", "5"):
+            scene[name].attrs["platform_name"] = "noaa10"
+        self.assertNotIn("5", self._written_scene(scene))
+
     def test_channel_4_reaches_the_writer_as_the_11_micron_image(self):
         """Channel 4 is the 11 micron window channel every AVHRR carries; PPS knows it as image3."""
         self.assertEqual(self._pps_identity(_make_scene(), "4"), ("image3", "ch_tb11"))

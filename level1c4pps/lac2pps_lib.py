@@ -17,6 +17,8 @@ PPS_TAGS = {"1": "ch_r06",
             "4": "ch_tb11",
             "5": "ch_tb12"}
 ONE_IR_CHANNEL = "4"
+# satpy's reader takes these AVHRR/1 platforms for AVHRR/2 and offers them a channel 5 that is a copy of channel 4.
+PLATFORMS_WITH_A_FALSE_CHANNEL_5 = ("noaa10",)
 
 
 def label_quality_flags(scene):
@@ -27,6 +29,8 @@ def label_quality_flags(scene):
 def process_scene(scene, out_path=".", orbit_n=0, engine=None):
     """Convert an already loaded AVHRR scene in place and write it as PPS level1c."""
     ir_channel = scene[ONE_IR_CHANNEL]
+    if ir_channel.attrs["platform_name"] in PLATFORMS_WITH_A_FALSE_CHANNEL_5:
+        del scene["5"]
     scanline_timestamps = xr.DataArray(ir_channel.coords["acq_time"].values, dims=["y"])
     set_header_and_band_attrs_defaults(scene, PPS_TAGS, ir_channel, orbit_n=orbit_n)
     rename_latitude_longitude(scene)
